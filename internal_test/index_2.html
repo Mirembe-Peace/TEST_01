@@ -82,122 +82,29 @@
 </html>
 
 
-!---- Your WebXR script has several issues that need to be fixed:  
+<!
+Issues:
+1.Incorrect `await` Usage in `activateXR()`
+  The function `activateXR()` is `async`, but it doesn't `await` anything properly.
+  `await` calls need to be inside an `async` function.
 
-### Issues:
-1. **Incorrect `await` Usage in `activateXR()`**  
-   - The function `activateXR()` is `async`, but it doesn't `await` anything properly.
-   - `await` calls need to be inside an `async` function.
+2.`session` is Not Defined in `onXRFrame`
+   You are calling `session.requestAnimationFrame(onXRFrame)`, but `session` is not defined globally.
 
-2. **`session` is Not Defined in `onXRFrame`**  
-   - You are calling `session.requestAnimationFrame(onXRFrame)`, but `session` is not defined globally.
+3.Duplicate `WebGLRenderer` and `PerspectiveCamera` Declarations
+   You are creating `const renderer = new THREE.WebGLRenderer(...)` and `const camera = new THREE.PerspectiveCamera()` twice.
 
-3. **Duplicate `WebGLRenderer` and `PerspectiveCamera` Declarations**  
-   - You are creating `const renderer = new THREE.WebGLRenderer(...)` and `const camera = new THREE.PerspectiveCamera()` twice.
+4.`referenceSpace` Used Before It's Defined
+   The `referenceSpace` variable is used in `getViewerPose(referenceSpace)`, but it's defined later.
 
-4. **`referenceSpace` Used Before It's Defined**  
-   - The `referenceSpace` variable is used in `getViewerPose(referenceSpace)`, but it's defined later.
-
-5. **Button Click Event Does Not Start WebXR Session**  
-   - You create a canvas but don’t start the WebXR session inside `activateXR()`. 
-
----
-
-### Fixed Code:
-This version properly initializes the WebXR session and displays a cube in AR.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebXR Test</title>
-    <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
-</head>
-<body>
-    <button onclick="activateXR()">Start Hello WebXR</button>
-
-    <script>
-        async function activateXR() {
-            if (!navigator.xr) {
-                alert("WebXR not supported in this browser.");
-                return;
-            }
-
-            // Create canvas for WebGL rendering
-            const canvas = document.createElement("canvas");
-            document.body.appendChild(canvas);
-            const gl = canvas.getContext("webgl", { xrCompatible: true });
-
-            // Set up Three.js scene
-            const scene = new THREE.Scene();
-
-            // Create a cube with different colors on each face
-            const materials = [
-                new THREE.MeshBasicMaterial({color: 0xff0000}),
-                new THREE.MeshBasicMaterial({color: 0x0000ff}),
-                new THREE.MeshBasicMaterial({color: 0x00ff00}),
-                new THREE.MeshBasicMaterial({color: 0xff00ff}),
-                new THREE.MeshBasicMaterial({color: 0x00ffff}),
-                new THREE.MeshBasicMaterial({color: 0xffff00})
-            ];
-
-            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), materials);
-            cube.position.set(0, 0, -0.5); // Position the cube slightly in front
-            scene.add(cube);
-
-            // Initialize renderer
-            const renderer = new THREE.WebGLRenderer({ canvas, context: gl, alpha: true });
-            renderer.autoClear = false;
-
-            // Create a camera
-            const camera = new THREE.PerspectiveCamera();
-            camera.matrixAutoUpdate = false;
-
-            try {
-                // Start WebXR session
-                const session = await navigator.xr.requestSession("immersive-ar");
-                session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-
-                // Create reference space
-                const referenceSpace = await session.requestReferenceSpace('local');
-
-                // WebXR render loop
-                function onXRFrame(time, frame) {
-                    session.requestAnimationFrame(onXRFrame);
-
-                    const pose = frame.getViewerPose(referenceSpace);
-                    if (pose) {
-                        const view = pose.views[0];
-                        const viewport = session.renderState.baseLayer.getViewport(view);
-                        renderer.setSize(viewport.width, viewport.height);
-
-                        camera.matrix.fromArray(view.transform.matrix);
-                        camera.projectionMatrix.fromArray(view.projectionMatrix);
-                        camera.updateMatrixWorld(true);
-
-                        renderer.render(scene, camera);
-                    }
-                }
-
-                session.requestAnimationFrame(onXRFrame);
-            } catch (error) {
-                console.error("Error starting WebXR session:", error);
-            }
-        }
-    </script>
-</body>
-</html>
-```
-
----
+5.Button Click Event Does Not Start WebXR Session  
+  You create a canvas but don’t start the WebXR session inside `activateXR()`. 
 
 Fixes & Improvements:
-✅ **Properly Initializes WebXR Session 
-✅ **Ensures `session` and `referenceSpace` Are Defined Before Use**  
-✅ **Creates a `cube` in a Correct Position**  
-✅ **Fixes Duplicate `renderer` and `camera` Instantiations**  
-✅ **Adds Basic Error Handling**  
+✅ Properly Initializes WebXR Session 
+✅ Ensures `session` and `referenceSpace` Are Defined Before Use 
+✅ Creates a `cube` in a Correct Position
+✅ Fixes Duplicate `renderer` and `camera` Instantiations 
+✅ Adds Basic Error Handling
 
-This version should now successfully start an AR session when you click the button. 🚀-------
+------->
